@@ -342,7 +342,68 @@ tr:hover td { background:var(--gray-50); }
 <div class="demo-accounts">
 <h4>🎓 Demo-Zugänge (zum Ausprobieren)</h4>
 
-
+<button class="demo-btn" onclick="fillDemo('anna.mueller','schueler123')">👧 Schülerin: anna.mueller / schueler123</button>
+<button class="demo-btn" onclick="fillDemo('tim.schmidt','schueler123')">👦 Schüler: tim.schmidt / schueler123</button>
+<button class="demo-btn" onclick="fillDemo('lisa.weber','schueler123')">👧 Schülerin: lisa.weber / schueler123</button>
+</div>
+</div>
+<!-- Register Form -->
+<div id="registerForm" style="display:none;">
+<div class="form-group">
+<label>Vorname</label>
+<input id="regFirstname" placeholder="Vorname" type="text"/>
+</div>
+<div class="form-group">
+<label>Nachname</label>
+<input id="regLastname" placeholder="Nachname" type="text"/>
+</div>
+<div class="form-group">
+<label>Benutzername (automatisch)</label>
+<input id="regUsername" placeholder="vorname.nachname" readonly="" style="background:var(--gray-50);" type="text"/>
+</div>
+<div class="form-group">
+<label>Passwort</label>
+<input id="regPassword" placeholder="Mindestens 6 Zeichen" type="password"/>
+</div>
+<div class="form-group">
+<label>Klasse</label>
+<select id="regClass">
+<option value="8a">Klasse 8a</option>
+<option value="8b">Klasse 8b</option>
+<option value="8c">Klasse 8c</option>
+<option value="8d">Klasse 8d</option>
+</select>
+</div>
+<button class="btn-primary" onclick="doRegister()">Konto erstellen →</button>
+<p style="font-size:12px;color:var(--gray-500);margin-top:12px;text-align:center;">
+        Schüler/innen können sich selbst registrieren. Die Lehrkraft sieht alle Konten im Verwaltungsbereich.
+      </p>
+</div>
+</div>
+</div>
+<!-- ===== MAIN APP ===== -->
+<div id="app" style="display:none;">
+<!-- Sidebar -->
+<nav class="sidebar" id="sidebar">
+<div class="sidebar-header">
+<div class="sidebar-logo">
+<div class="logo-sm">🧮</div>
+<span>MathLern</span>
+</div>
+<div class="user-info">
+<div class="user-avatar" id="sidebarAvatar">?</div>
+<div class="user-details">
+<div class="user-name" id="sidebarName">Laden...</div>
+<div class="user-role" id="sidebarRole">Schüler/in</div>
+</div>
+</div>
+</div>
+<div class="sidebar-nav">
+<div class="nav-section">
+<div class="nav-section-title">Übersicht</div>
+<button class="nav-item active" id="nav-dashboard" onclick="showView('dashboard')">
+<span class="nav-icon">🏠</span> Dashboard
+        </button>
 <button class="nav-item" id="nav-progress" onclick="showView('progress')">
 <span class="nav-icon">📊</span> Mein Fortschritt
         </button>
@@ -483,7 +544,7 @@ const DB = {
 function initDB() {
   if (!DB.get('users')) {
     DB.set('users', [
-      { id: 'u1', username: 'lehrer', password: 'lehrer123', role: 'teacher', name: 'Frau Müller', class: '' },
+      { id: 'u1', username: 'egert', password: 'MathLern2026!', role: 'teacher', name: 'Lehrer Egert', class: '' },
       { id: 'u2', username: 'anna.mueller', password: 'schueler123', role: 'student', name: 'Anna Müller', class: '8a', firstname: 'Anna', lastname: 'Müller' },
       { id: 'u3', username: 'tim.schmidt', password: 'schueler123', role: 'student', name: 'Tim Schmidt', class: '8a', firstname: 'Tim', lastname: 'Schmidt' },
       { id: 'u4', username: 'lisa.weber', password: 'schueler123', role: 'student', name: 'Lisa Weber', class: '8b', firstname: 'Lisa', lastname: 'Weber' },
@@ -2612,6 +2673,12 @@ function showLerncheckResult() {
 <script>
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
+  // Leere alte localStorage-Daten falls alter Lehrer-Account gespeichert
+  const storedUsers = DB.get('users');
+  if (storedUsers && storedUsers.find(u => u.username === 'lehrer')) {
+    DB.del('users');
+    DB.del('currentUser');
+  }
   initDB();
 
   // Auto-generate username on register
