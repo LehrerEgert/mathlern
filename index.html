@@ -341,7 +341,7 @@ tr:hover td { background:var(--gray-50); }
 <button class="btn-primary" onclick="doLogin()">Anmelden →</button>
 <div class="demo-accounts">
 <h4>🎓 Demo-Zugänge (zum Ausprobieren)</h4>
-<button class="demo-btn" onclick="fillDemo('lehrer','lehrer123')">👩‍🏫 Lehrkraft: lehrer / lehrer123</button>
+<button class="demo-btn" onclick="fillDemo('egert','Gd11071981')">👩‍🏫 Lehrkraft: egert / Gd11071981</button>
 <button class="demo-btn" onclick="fillDemo('anna.mueller','schueler123')">👧 Schülerin: anna.mueller / schueler123</button>
 <button class="demo-btn" onclick="fillDemo('tim.schmidt','schueler123')">👦 Schüler: tim.schmidt / schueler123</button>
 <button class="demo-btn" onclick="fillDemo('lisa.weber','schueler123')">👧 Schülerin: lisa.weber / schueler123</button>
@@ -544,7 +544,7 @@ const DB = {
 function initDB() {
   if (!DB.get('users')) {
     DB.set('users', [
-      { id: 'u1', username: 'lehrer', password: 'lehrer123', role: 'teacher', name: 'Frau Müller', class: '' },
+      { id: 'u1', username: 'egert', password: 'Gd11071981', role: 'teacher', name: 'Lehrer Egert', class: '' },
       { id: 'u2', username: 'anna.mueller', password: 'schueler123', role: 'student', name: 'Anna Müller', class: '8a', firstname: 'Anna', lastname: 'Müller' },
       { id: 'u3', username: 'tim.schmidt', password: 'schueler123', role: 'student', name: 'Tim Schmidt', class: '8a', firstname: 'Tim', lastname: 'Schmidt' },
       { id: 'u4', username: 'lisa.weber', password: 'schueler123', role: 'student', name: 'Lisa Weber', class: '8b', firstname: 'Lisa', lastname: 'Weber' },
