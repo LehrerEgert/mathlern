@@ -339,13 +339,7 @@ tr:hover td { background:var(--gray-50); }
 <input autocomplete="current-password" id="loginPassword" placeholder="Passwort eingeben" type="password"/>
 </div>
 <button class="btn-primary" onclick="doLogin()">Anmelden →</button>
-<div class="demo-accounts">
-<h4>🎓 Demo-Zugänge (zum Ausprobieren)</h4>
 
-<button class="demo-btn" onclick="fillDemo('anna.mueller','schueler123')">👧 Schülerin: anna.mueller / schueler123</button>
-<button class="demo-btn" onclick="fillDemo('tim.schmidt','schueler123')">👦 Schüler: tim.schmidt / schueler123</button>
-<button class="demo-btn" onclick="fillDemo('lisa.weber','schueler123')">👧 Schülerin: lisa.weber / schueler123</button>
-</div>
 </div>
 <!-- Register Form -->
 <div id="registerForm" style="display:none;">
@@ -544,7 +538,7 @@ const DB = {
 function initDB() {
   if (!DB.get('users')) {
     DB.set('users', [
-      { id: 'u1', username: 'egert', password: 'MathLern2026!', role: 'teacher', name: 'Lehrer Egert', class: '' },
+      { id: 'u1', username: 'egert', password: 'Lehrer2026', role: 'teacher', name: 'Lehrer Egert', class: '' },
       { id: 'u2', username: 'anna.mueller', password: 'schueler123', role: 'student', name: 'Anna Müller', class: '8a', firstname: 'Anna', lastname: 'Müller' },
       { id: 'u3', username: 'tim.schmidt', password: 'schueler123', role: 'student', name: 'Tim Schmidt', class: '8a', firstname: 'Tim', lastname: 'Schmidt' },
       { id: 'u4', username: 'lisa.weber', password: 'schueler123', role: 'student', name: 'Lisa Weber', class: '8b', firstname: 'Lisa', lastname: 'Weber' },
@@ -2673,13 +2667,7 @@ function showLerncheckResult() {
 <script>
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
-  // Leere alte localStorage-Daten falls alter Lehrer-Account gespeichert
-  const storedUsers = DB.get('users');
-  if (storedUsers && storedUsers.find(u => u.username === 'lehrer')) {
-    DB.del('users');
-    DB.del('currentUser');
-  }
-  initDB();
+  DB.del('users'); DB.del('currentUser'); initDB();
 
   // Auto-generate username on register
   ['regFirstname','regLastname'].forEach(id => {
