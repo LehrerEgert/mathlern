@@ -175,16 +175,19 @@ function showLCResult(){
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-  initDB();
-  await ghLoad();
-  ['regFirstname','regLastname'].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el)el.addEventListener('input',()=>{
-      const fn=document.getElementById('regFirstname').value.trim();
-      const ln=document.getElementById('regLastname').value.trim();
-      if(fn&&ln)document.getElementById('regUsername').value=(fn+'.'+ln).toLowerCase().replace(/\s/g,'').replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss');
-    });
-  });
+ function initDB(){
+  DB.del('users');
+  DB.set('users',[
+    {id:'u1',username:'egert',password:'Lehrer2026',role:'teacher',name:'Lehrer Egert',class:''},
+    {id:'u2',username:'anna.mueller',password:'schueler123',role:'student',name:'Anna Mueller',class:'8a'},
+    {id:'u3',username:'tim.schmidt',password:'schueler123',role:'student',name:'Tim Schmidt',class:'8a'},
+    {id:'u4',username:'lisa.weber',password:'schueler123',role:'student',name:'Lisa Weber',class:'8b'},
+    {id:'u5',username:'max.braun',password:'schueler123',role:'student',name:'Max Braun',class:'8b'},
+    {id:'u6',username:'sophie.klein',password:'schueler123',role:'student',name:'Sophie Klein',class:'8c'}
+  ]);
+  if(!DB.get('progress'))DB.set('progress',{});
+  if(!DB.get('sessions'))DB.set('sessions',{});
+});
   ['loginUsername','loginPassword'].forEach(id=>{
     const el=document.getElementById(id);
     if(el)el.addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
@@ -198,7 +201,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 "toastContainer" style="position:fixed;bottom:24px;right:24px;z-index:2000;display:flex;flex-direction:column;gap:8px;"></div>
 <script>
 const DB={get(k){try{return JSON.parse(localStorage.getItem('mathlern_'+k));}catch{return null;}},set(k,v){localStorage.setItem('mathlern_'+k,JSON.stringify(v));},del(k){localStorage.removeItem('mathlern_'+k);}};
-function initDB(){if(!DB.get('users')){DB.set('users',[{id:'u1',username:'egert',password:'Lehrer2026',role:'teacher',name:'Lehrer Egert',class:''},{id:'u2',username:'anna.mueller',password:'schueler123',role:'student',name:'Anna Mueller',class:'8a'},{id:'u3',username:'tim.schmidt',password:'schueler123',role:'student',name:'Tim Schmidt',class:'8a'},{id:'u4',username:'lisa.weber',password:'schueler123',role:'student',name:'Lisa Weber',class:'8b'},{id:'u5',username:'max.braun',password:'schueler123',role:'student',name:'Max Braun',class:'8b'},{id:'u6',username:'sophie.klein',password:'schueler123',role:'student',name:'Sophie Klein',class:'8c'}]);}if(!DB.get('progress'))DB.set('progress',{});if(!DB.get('sessions'))DB.set('sessions',{});}
+function function initDB(){if(!DB.get('users')){(){if(!DB.get('users')){DB.set('users',[{id:'u1',username:'egert',password:'Lehrer2026',role:'teacher',name:'Lehrer Egert',class:''},{id:'u2',username:'anna.mueller',password:'schueler123',role:'student',name:'Anna Mueller',class:'8a'},{id:'u3',username:'tim.schmidt',password:'schueler123',role:'student',name:'Tim Schmidt',class:'8a'},{id:'u4',username:'lisa.weber',password:'schueler123',role:'student',name:'Lisa Weber',class:'8b'},{id:'u5',username:'max.braun',password:'schueler123',role:'student',name:'Max Braun',class:'8b'},{id:'u6',username:'sophie.klein',password:'schueler123',role:'student',name:'Sophie Klein',class:'8c'}]);}if(!DB.get('progress'))DB.set('progress',{});if(!DB.get('sessions'))DB.set('sessions',{});}
 let currentUser=null,sessionTimer=null,sessionSeconds=0;
 function doLogin(){const u=document.getElementById('loginUsername').value.trim();const p=document.getElementById('loginPassword').value;const users=DB.get('users')||[];const user=users.find(x=>x.username===u&&x.password===p);if(!user){showLoginError('Benutzername oder Passwort falsch.');return;}currentUser=user;DB.set('currentUser',user.id);startApp();}
 function doLogout(){stopTimer();currentUser=null;DB.del('currentUser');document.getElementById('app').style.display='none';document.getElementById('loginScreen').style.display='flex';}
@@ -259,7 +262,7 @@ function showLCResult(){const correct=lcState.answers.filter(a=>a.correct).lengt
 document.addEventListener('DOMContentLoaded', () => {
   const _su=DB.get('users');
   if(_su&&_su.find(u=>u.username==='lehrer')){DB.del('users');DB.del('currentUser');}
-  initDB();
+  function initDB(){if(!DB.get('users')){();
   ['regFirstname','regLastname'].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener('input',()=>{const fn=document.getElementById('regFirstname').value.trim();const ln=document.getElementById('regLastname').value.trim();if(fn&&ln)document.getElementById('regUsername').value=(fn+'.'+ln).toLowerCase().replace(/\s/g,'').replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss');});});
   ['loginUsername','loginPassword'].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});});
   const uid=DB.get('currentUser');
