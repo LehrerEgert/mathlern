@@ -303,38 +303,55 @@ function showLogin() {
 }
 
 function init() {
-  // Timeout: nach 8 Sekunden trotzdem Login zeigen
-  var timeout = setTimeout(function() {
-    console.warn('Firebase Timeout - zeige Login ohne Firebase');
-    if (!DB.get('users')) {
-      DB.set('users', [{id:'u1',username:'egert',password:'Lehrer2026',role:'teacher',name:'Lehrer Egert',class:''}]);
-    }
+  // Stelle sicher dass Basis-Accounts vorhanden sind
+  if (!DB.get('users') || DB.get('users').length === 0) {
+    DB.set('users', [
+      {id:'u1',username:'egert',password:'Lehrer2026',role:'teacher',name:'Lehrer Egert',class:''},
+      {id:'u2',username:'anna.mueller',password:'schueler123',role:'student',name:'Anna Mueller',class:'8a'},
+      {id:'u3',username:'tim.schmidt',password:'schueler123',role:'student',name:'Tim Schmidt',class:'8a'}
+    ]);
+  }
+  if (!DB.get('progress')) DB.set('progress', {});
+
+  function showLogin() {
     var uid = DB.get('currentUser');
     if (uid) {
       var u = (DB.get('users')||[]).find(function(x) { return x.id === uid; });
       if (u) { currentUser = u; startApp(); return; }
     }
-    showLogin();
-  }, 8000);
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('loginScreen').style.display = 'flex';
+  }
 
+  // Sofort Login zeigen (Firebase lädt im Hintergrund)
+  showLogin();
+
+  // Firebase im Hintergrund laden
   loadFirebase(function() {
     fbGetUsers(function(users) {
       if (users.length > 0) {
-        DB.set('users', users);
+        // Merge: behalte lokale User, füge Firebase-User hinzu
+        var localUsers = DB.get('users') || [];
+        users.forEach(function(fu) {
+          if (!localUsers.find(function(lu) { return lu.id === fu.id; })) {
+            localUsers.push(fu);
+          }
+        });
+        DB.set('users', localUsers);
       } else {
-        var teacher = {id:'u1',username:'egert',password:'Lehrer2026',role:'teacher',name:'Lehrer Egert',class:''};
-        fbSaveUser(teacher);
-        DB.set('users', [teacher]);
+        // Speichere lokale User in Firebase
+        var localUsers = DB.get('users') || [];
+        localUsers.forEach(function(u) { fbSaveUser(u); });
       }
       fbGetProgress(function(prog) {
-        clearTimeout(timeout);
-        DB.set('progress', prog);
-        var uid = DB.get('currentUser');
-        if (uid) {
-          var u = (DB.get('users')||[]).find(function(x) { return x.id === uid; });
-          if (u) { currentUser = u; startApp(); return; }
-        }
-        showLogin();
+        // Merge Fortschritt
+        var localProg = DB.get('progress') || {};
+        Object.keys(prog).forEach(function(uid) {
+          if (!localProg[uid]) localProg[uid] = prog[uid];
+        });
+        DB.set('progress', localProg);
+        // Dashboard neu laden falls eingeloggt
+        if (currentUser) renderDB();
       });
     });
   });
