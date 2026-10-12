@@ -297,7 +297,26 @@ function fbDeleteDoc(col, id) {
 }
 
 // Init
+function showLogin() {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+}
+
 function init() {
+  // Timeout: nach 8 Sekunden trotzdem Login zeigen
+  var timeout = setTimeout(function() {
+    console.warn('Firebase Timeout - zeige Login ohne Firebase');
+    if (!DB.get('users')) {
+      DB.set('users', [{id:'u1',username:'egert',password:'Lehrer2026',role:'teacher',name:'Lehrer Egert',class:''}]);
+    }
+    var uid = DB.get('currentUser');
+    if (uid) {
+      var u = (DB.get('users')||[]).find(function(x) { return x.id === uid; });
+      if (u) { currentUser = u; startApp(); return; }
+    }
+    showLogin();
+  }, 8000);
+
   loadFirebase(function() {
     fbGetUsers(function(users) {
       if (users.length > 0) {
@@ -308,15 +327,14 @@ function init() {
         DB.set('users', [teacher]);
       }
       fbGetProgress(function(prog) {
+        clearTimeout(timeout);
         DB.set('progress', prog);
-        // Auto-login
         var uid = DB.get('currentUser');
         if (uid) {
           var u = (DB.get('users')||[]).find(function(x) { return x.id === uid; });
           if (u) { currentUser = u; startApp(); return; }
         }
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('loginScreen').style.display = 'flex';
+        showLogin();
       });
     });
   });
