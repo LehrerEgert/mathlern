@@ -127,11 +127,11 @@ td{padding:10px 14px;border-bottom:1px solid var(--gray-100);color:var(--gray-70
 </style>
 </head>
 <body>
-<div class="loading" id="loading">
+<div class="loading" id="loading" style="display:none;">
 <div class="spinner"></div>
 <div style="font-size:16px;font-weight:600;color:var(--primary);">Plattform wird geladen...</div>
 </div>
-<div id="loginScreen">
+<div id="loginScreen" style="display:flex;">
 <div class="login-box">
 <div style="text-align:center;margin-bottom:32px;">
 <div style="width:72px;height:72px;background:linear-gradient(135deg,var(--primary),var(--primary-light));border-radius:20px;display:inline-flex;align-items:center;justify-content:center;font-size:36px;margin-bottom:16px;">🧮</div>
@@ -979,7 +979,45 @@ function showLCResult(){
 }
 
 // Start
-window.onload = function() { init(); };
+window.onload = function() {
+  // Basis-Accounts sicherstellen
+  var users = DB.get('users') || [];
+  if (!users.find(function(u) { return u.username === 'egert'; })) {
+    users.unshift({id:'u1',username:'egert',password:'Lehrer2026',role:'teacher',name:'Lehrer Egert',class:''});
+    DB.set('users', users);
+  }
+  if (!DB.get('progress')) DB.set('progress', {});
+  
+  // Auto-login prüfen
+  var uid = DB.get('currentUser');
+  if (uid) {
+    var u = (DB.get('users')||[]).find(function(x) { return x.id === uid; });
+    if (u) { currentUser = u; startApp(); }
+  }
+  
+  // Firebase im Hintergrund
+  setTimeout(function() {
+    loadFirebase(function() {
+      fbGetUsers(function(fbUsers) {
+        if (fbUsers.length > 0) {
+          var local = DB.get('users') || [];
+          fbUsers.forEach(function(fu) {
+            if (!local.find(function(lu) { return lu.id === fu.id; })) local.push(fu);
+          });
+          DB.set('users', local);
+        } else {
+          (DB.get('users')||[]).forEach(function(u) { fbSaveUser(u); });
+        }
+        fbGetProgress(function(prog) {
+          var lp = DB.get('progress') || {};
+          Object.keys(prog).forEach(function(k) { if (!lp[k]) lp[k] = prog[k]; });
+          DB.set('progress', lp);
+          if (currentUser) renderDB();
+        });
+      });
+    });
+  }, 500);
+};
 </script>
 </body>
 </html>
