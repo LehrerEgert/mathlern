@@ -2704,95 +2704,209 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
-// Firebase Hintergrund-Sync
-(function() {
-  var FB_PROJECT = 'mathlern-af50a';
-  var FB_KEY = 'AIzaSyBzji3jD2SdPqn3DEkvxl-LMiMVRIlXvg8';
-  var FB_URL = 'https://firestore.googleapis.com/v1/projects/' + FB_PROJECT + '/databases/(default)/documents';
-  
-  function fbFetch(path, method, body) {
-    return fetch('https://identitytoolkit.googleapis.com/v1/accounts:signInAnonymously?key=' + FB_KEY, {method:'POST',headers:{'Content-Type':'application/json'},body:'{}'})
-      .then(function(r) { return r.json(); })
-      .then(function(auth) {
-        var opts = {method: method||'GET', headers: {'Authorization': 'Bearer ' + auth.idToken, 'Content-Type': 'application/json'}};
-        if (body) opts.body = JSON.stringify(body);
-        return fetch(FB_URL + path, opts).then(function(r) { return r.json(); });
-      });
-  }
-  
-  function toFirestore(obj) {
+
+
+<script>
+// Firebase REST API Sync
+var FB_KEY = 'AIzaSyBzji3jD2SdPqn3DEkvxl-LMiMVRIlXvg8';
+var FB_PROJECT = 'mathlern-af50a';
+var FB_TOKEN = null;
+
+function getFirebaseToken(cb) {
+  if (FB_TOKEN) { cb(FB_TOKEN); return; }
+  fetch('https://identitytoolkit.googleapis.com/v1/accounts:signInAnonymously?key=' + FB_KEY, {
+    method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}'
+  }).then(function(r) { return r.json(); })
+  .then(function(d) { FB_TOKEN = d.idToken; cb(FB_TOKEN); })
+  .catch(function() { cb(null); });
+}
+
+function fbSaveUserREST(user) {
+  getFirebaseToken(function(token) {
+    if (!token) return;
+    var url = 'https://firestore.googleapis.com/v1/projects/' + FB_PROJECT + '/databases/(default)/documents/users/' + user.id;
     var fields = {};
-    Object.keys(obj).forEach(function(k) {
-      var v = obj[k];
-      if (typeof v === 'string') fields[k] = {stringValue: v};
-      else if (typeof v === 'number') fields[k] = {integerValue: v};
-      else if (typeof v === 'boolean') fields[k] = {booleanValue: v};
-      else if (typeof v === 'object' && v !== null) fields[k] = {stringValue: JSON.stringify(v)};
+    Object.keys(user).forEach(function(k) {
+      fields[k] = {stringValue: String(user[k])};
     });
-    return {fields: fields};
-  }
-  
-  function fromFirestore(doc) {
-    if (!doc || !doc.fields) return null;
-    var obj = {};
-    Object.keys(doc.fields).forEach(function(k) {
-      var f = doc.fields[k];
-      if (f.stringValue !== undefined) {
-        try { obj[k] = JSON.parse(f.stringValue); } catch(e) { obj[k] = f.stringValue; }
-      } else if (f.integerValue !== undefined) obj[k] = parseInt(f.integerValue);
-      else if (f.booleanValue !== undefined) obj[k] = f.booleanValue;
-    });
-    return obj;
-  }
-  
-  // Sync nach Login
-  var origStartApp = window.startApp || function(){};
-  
-  // Sync Schüler-Registrierung zu Firebase
-  var origDoRegister = window.doRegister;
-  if (origDoRegister) {
-    // Firebase sync wird nach Registrierung aufgerufen
-  }
-  
-  // Alle 60 Sekunden Daten von Firebase holen (für Lehrer-Ansicht)
-  setInterval(function() {
-    if (!currentUser) return;
-    if (currentUser.role === 'teacher') {
-      // Lade alle User von Firebase
-      fbFetch('/users', 'GET').then(function(data) {
-        if (data && data.documents) {
-          var fbUsers = data.documents.map(function(d) { return fromFirestore(d); }).filter(Boolean);
-          if (fbUsers.length > 0) {
-            var local = DB.get('users') || [];
-            fbUsers.forEach(function(fu) {
-              if (fu && fu.id && !local.find(function(lu) { return lu.id === fu.id; })) {
-                local.push(fu);
-              }
+    fetch(url + '?updateMask.fieldPaths=' + Object.keys(user).join('&updateMask.fieldPaths='), {
+      method: 'PATCH',
+      headers: {'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'},
+      body: JSON.stringify({fields: fields})
+    }).catch(function(){});
+  });
+}
+
+function fbLoadUsersREST(cb) {
+  getFirebaseToken(function(token) {
+    if (!token) { cb([]); return; }
+    fetch('https://firestore.googleapis.com/v1/projects/' + FB_PROJECT + '/databases/(default)/documents/users', {
+      headers: {'Authorization': 'Bearer ' + token}
+    }).then(function(r) { return r.json(); })
+    .then(function(data) {
+      var users = [];
+      if (data.documents) {
+        data.documents.forEach(function(doc) {
+          if (doc.fields) {
+            var u = {};
+            Object.keys(doc.fields).forEach(function(k) {
+              u[k] = doc.fields[k].stringValue || doc.fields[k].integerValue || doc.fields[k].booleanValue || '';
             });
-            DB.set('users', local);
+            if (u.id) users.push(u);
+          }
+        });
+      }
+      cb(users);
+    }).catch(function() { cb([]); });
+  });
+}
+
+function fbSaveProgressREST(uid, prog) {
+  getFirebaseToken(function(token) {
+    if (!token) return;
+    var url = 'https://firestore.googleapis.com/v1/projects/' + FB_PROJECT + '/databases/(default)/documents/progress/' + uid;
+    fetch(url, {
+      method: 'PATCH',
+      headers: {'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'},
+      body: JSON.stringify({fields: {data: {stringValue: JSON.stringify(prog)}}})
+    }).catch(function(){});
+  });
+}
+
+function fbLoadProgressREST(cb) {
+  getFirebaseToken(function(token) {
+    if (!token) { cb({}); return; }
+    fetch('https://firestore.googleapis.com/v1/projects/' + FB_PROJECT + '/databases/(default)/documents/progress', {
+      headers: {'Authorization': 'Bearer ' + token}
+    }).then(function(r) { return r.json(); })
+    .then(function(data) {
+      var prog = {};
+      if (data.documents) {
+        data.documents.forEach(function(doc) {
+          var uid = doc.name.split('/').pop();
+          if (doc.fields && doc.fields.data) {
+            try { prog[uid] = JSON.parse(doc.fields.data.stringValue); } catch(e) {}
+          }
+        });
+      }
+      cb(prog);
+    }).catch(function() { cb({}); });
+  });
+}
+
+// Beim Laden: Schüler von Firebase holen
+window.addEventListener('load', function() {
+  setTimeout(function() {
+    fbLoadUsersREST(function(fbUsers) {
+      if (fbUsers.length > 0) {
+        var local = DB.get('users') || [];
+        var changed = false;
+        fbUsers.forEach(function(fu) {
+          if (!local.find(function(lu) { return lu.id === fu.id; })) {
+            local.push(fu);
+            changed = true;
+          }
+        });
+        if (changed) {
+          DB.set('users', local);
+          if (currentUser && currentUser.role === 'teacher') {
+            if (document.getElementById('view-teacher').classList.contains('active')) renderTeacher();
+            if (document.getElementById('view-manage').classList.contains('active')) renderManage();
+            renderDashboard && renderDashboard();
           }
         }
-      }).catch(function(){});
-    }
-  }, 60000);
-  
-  // Beim Registrieren: User zu Firebase speichern
-  document.addEventListener('DOMContentLoaded', function() {
-    var regBtn = document.querySelector('#registerForm .btn-primary');
-    if (regBtn) {
-      var origClick = regBtn.onclick;
-      regBtn.addEventListener('click', function() {
-        setTimeout(function() {
-          var users = DB.get('users') || [];
-          var lastUser = users[users.length - 1];
-          if (lastUser && lastUser.role === 'student') {
-            fbFetch('/users/' + lastUser.id, 'PATCH', toFirestore(lastUser)).catch(function(){});
-          }
-        }, 500);
+      }
+      
+      // Fortschritt laden
+      fbLoadProgressREST(function(prog) {
+        var lp = DB.get('progress') || {};
+        Object.keys(prog).forEach(function(uid) {
+          if (!lp[uid]) { lp[uid] = prog[uid]; }
+        });
+        DB.set('progress', lp);
       });
+    });
+  }, 1000);
+  
+  // Alle 30 Sekunden aktualisieren
+  setInterval(function() {
+    if (!currentUser || currentUser.role !== 'teacher') return;
+    fbLoadUsersREST(function(fbUsers) {
+      if (fbUsers.length > 0) {
+        var local = DB.get('users') || [];
+        var changed = false;
+        fbUsers.forEach(function(fu) {
+          if (!local.find(function(lu) { return lu.id === fu.id; })) {
+            local.push(fu);
+            changed = true;
+          }
+        });
+        if (changed) {
+          DB.set('users', local);
+          if (document.getElementById('view-teacher').classList.contains('active')) renderTeacher();
+          if (document.getElementById('view-manage').classList.contains('active')) renderManage();
+        }
+      }
+    });
+    fbLoadProgressREST(function(prog) {
+      var lp = DB.get('progress') || {};
+      Object.keys(prog).forEach(function(uid) { lp[uid] = prog[uid]; });
+      DB.set('progress', lp);
+    });
+  }, 30000);
+});
+
+// Beim Registrieren: User zu Firebase speichern
+var _origDoRegister = window.doRegister;
+window.doRegister = function() {
+  var fn = document.getElementById('regFn') ? document.getElementById('regFn').value.trim() : '';
+  var ln = document.getElementById('regLn') ? document.getElementById('regLn').value.trim() : '';
+  var pw = document.getElementById('regPw') ? document.getElementById('regPw').value : '';
+  var cls = document.getElementById('regCls') ? document.getElementById('regCls').value : '8a';
+  
+  if (!fn||!ln||!pw) { 
+    var el = document.getElementById('loginError');
+    if(el){el.textContent='Bitte alle Felder ausfüllen.';el.style.display='block';setTimeout(function(){el.style.display='none';},4000);}
+    return; 
+  }
+  if (pw.length < 6) { 
+    var el = document.getElementById('loginError');
+    if(el){el.textContent='Passwort mind. 6 Zeichen.';el.style.display='block';setTimeout(function(){el.style.display='none';},4000);}
+    return; 
+  }
+  
+  var un = (fn+'.'+ln).toLowerCase().replace(/\s/g,'').replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss');
+  var users = DB.get('users') || [];
+  if (users.find(function(u) { return u.username === un; })) { 
+    var el = document.getElementById('loginError');
+    if(el){el.textContent='Benutzername bereits vergeben.';el.style.display='block';setTimeout(function(){el.style.display='none';},4000);}
+    return; 
+  }
+  
+  var nu = {id:'u'+Date.now(), username:un, password:pw, role:'student', name:fn+' '+ln, class:cls, firstname:fn, lastname:ln};
+  users.push(nu);
+  DB.set('users', users);
+  
+  // Zu Firebase speichern
+  fbSaveUserREST(nu);
+  
+  currentUser = nu;
+  DB.set('currentUser', nu.id);
+  startApp();
+};
+
+// Fortschritt zu Firebase speichern
+var _origRecordAnswer = window.recordAnswer;
+if (_origRecordAnswer) {
+  window.recordAnswer = function(moduleId, exerciseId, correct) {
+    _origRecordAnswer(moduleId, exerciseId, correct);
+    if (currentUser) {
+      var all = DB.get('progress') || {};
+      if (all[currentUser.id]) fbSaveProgressREST(currentUser.id, all[currentUser.id]);
     }
-  });
-})();
+  };
+}
+</script>
 
 </body>
 </html>
