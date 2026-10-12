@@ -2856,43 +2856,18 @@ window.addEventListener('load', function() {
   }, 30000);
 });
 
-// Beim Registrieren: User zu Firebase speichern
-var _origDoRegister = window.doRegister;
-window.doRegister = function() {
-  var fn = document.getElementById('regFn') ? document.getElementById('regFn').value.trim() : '';
-  var ln = document.getElementById('regLn') ? document.getElementById('regLn').value.trim() : '';
-  var pw = document.getElementById('regPw') ? document.getElementById('regPw').value : '';
-  var cls = document.getElementById('regCls') ? document.getElementById('regCls').value : '8a';
-  
-  if (!fn||!ln||!pw) { 
-    var el = document.getElementById('loginError');
-    if(el){el.textContent='Bitte alle Felder ausfüllen.';el.style.display='block';setTimeout(function(){el.style.display='none';},4000);}
-    return; 
-  }
-  if (pw.length < 6) { 
-    var el = document.getElementById('loginError');
-    if(el){el.textContent='Passwort mind. 6 Zeichen.';el.style.display='block';setTimeout(function(){el.style.display='none';},4000);}
-    return; 
-  }
-  
-  var un = (fn+'.'+ln).toLowerCase().replace(/\s/g,'').replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss');
-  var users = DB.get('users') || [];
-  if (users.find(function(u) { return u.username === un; })) { 
-    var el = document.getElementById('loginError');
-    if(el){el.textContent='Benutzername bereits vergeben.';el.style.display='block';setTimeout(function(){el.style.display='none';},4000);}
-    return; 
-  }
-  
-  var nu = {id:'u'+Date.now(), username:un, password:pw, role:'student', name:fn+' '+ln, class:cls, firstname:fn, lastname:ln};
-  users.push(nu);
-  DB.set('users', users);
-  
-  // Zu Firebase speichern
-  fbSaveUserREST(nu);
-  
-  currentUser = nu;
-  DB.set('currentUser', nu.id);
-  startApp();
+// Beim Registrieren: User zu Firebase speichern (nach originalem doRegister)
+var _origDoRegister = doRegister;
+doRegister = function() {
+  _origDoRegister();
+  // Nach kurzer Verzögerung den neuen User zu Firebase speichern
+  setTimeout(function() {
+    var users = DB.get('users') || [];
+    var lastUser = users[users.length - 1];
+    if (lastUser && lastUser.role === 'student') {
+      fbSaveUserREST(lastUser);
+    }
+  }, 500);
 };
 
 // Fortschritt zu Firebase speichern
